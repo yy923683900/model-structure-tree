@@ -1,0 +1,47 @@
+{
+  "name": "@mst/core",
+  "version": "0.0.1",
+  "description": "Web Components core built with Lit",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./components/*": {
+      "types": "./dist/components/*/index.d.ts",
+      "import": "./dist/components/*/index.js",
+      "require": "./dist/components/*/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "custom-elements.json",
+    "README.md"
+  ],
+  "sideEffects": [
+    "**/define.ts",
+    "**/define.js",
+    "./dist/index.js",
+    "./dist/index.cjs"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --outDir dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lit": "^3.1.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MST · Vanilla Playground</title>
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 32px; }
+      h1 { margin-top: 0; }
+      .row { display: flex; gap: 12px; margin-bottom: 24px; }
+    </style>
+  </head>
+  <body>
+    <h1>MST · Vanilla</h1>
+
+    <div class="row">
+      <mst-button variant="default">Default</mst-button>
+      <mst-button variant="primary">Primary</mst-button>
+      <mst-button variant="danger">Danger</mst-button>
+      <mst-button disabled>Disabled</mst-button>
+    </div>
+
+    <mst-tree id="tree"></mst-tree>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

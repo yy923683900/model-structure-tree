@@ -1,0 +1,26 @@
+{
+  "name": "model-structure-tree",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A cross-framework Web Components library (vanilla / React / Vue)",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter \"./packages/*\" run dev",
+    "build": "pnpm -r --filter \"./packages/*\" run build",
+    "build:core": "pnpm --filter @mst/core run build",
+    "build:react": "pnpm --filter @mst/react run build",
+    "build:vue": "pnpm --filter @mst/vue run build",
+    "play:vanilla": "pnpm --filter playground-vanilla run dev",
+    "play:react": "pnpm --filter playground-react run dev",
+    "play:vue": "pnpm --filter playground-vue run dev",
+    "clean": "pnpm -r exec rimraf dist node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
