@@ -14,6 +14,10 @@ export default defineConfig({
           __dirname,
           'src/components/mst-tree/index.ts',
         ),
+        'components/mst-feature-tree/index': resolve(
+          __dirname,
+          'src/components/mst-feature-tree/index.ts',
+        ),
       },
       formats: ['es', 'cjs'],
       fileName: (format, entryName) =>

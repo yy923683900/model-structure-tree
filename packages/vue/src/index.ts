@@ -3,6 +3,14 @@ import { defineAll } from '@mst/core';
 
 export type { MstButtonVariant } from '@mst/core/components/mst-button';
 export type { MstTreeNode } from '@mst/core/components/mst-tree';
+export type {
+  FeatureTreeNode,
+  FeatureTreeSelectDetail,
+  FeatureTreeExpandDetail,
+  FeatureTreeSearchDetail,
+  FeatureTreeVisibilityDetail,
+  FeatureTreeEditDetail,
+} from '@mst/core/components/mst-feature-tree';
 
 /**
  * Vue plugin – registers all `<mst-*>` custom elements globally.

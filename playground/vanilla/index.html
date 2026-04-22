@@ -4,22 +4,35 @@
     <meta charset="UTF-8" />
     <title>MST · Vanilla Playground</title>
     <style>
-      body { font-family: system-ui, sans-serif; padding: 32px; }
+      body { font-family: system-ui, sans-serif; padding: 32px; background: #f5f7fa; }
       h1 { margin-top: 0; }
+      h2 { margin-top: 32px; }
       .row { display: flex; gap: 12px; margin-bottom: 24px; }
+      .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
     </style>
   </head>
   <body>
     <h1>MST · Vanilla</h1>
 
-    <div class="row">
-      <mst-button variant="default">Default</mst-button>
-      <mst-button variant="primary">Primary</mst-button>
-      <mst-button variant="danger">Danger</mst-button>
-      <mst-button disabled>Disabled</mst-button>
+    <div class="card">
+      <h2>Button</h2>
+      <div class="row">
+        <mst-button variant="default">Default</mst-button>
+        <mst-button variant="primary">Primary</mst-button>
+        <mst-button variant="danger">Danger</mst-button>
+        <mst-button disabled>Disabled</mst-button>
+      </div>
     </div>
 
-    <mst-tree id="tree"></mst-tree>
+    <div class="card">
+      <h2>Simple tree</h2>
+      <mst-tree id="tree"></mst-tree>
+    </div>
+
+    <div class="card">
+      <h2>Feature Tree (模型结构树)</h2>
+      <mst-feature-tree id="feature-tree" height="500"></mst-feature-tree>
+    </div>
 
     <script type="module" src="./src/main.ts"></script>
   </body>
