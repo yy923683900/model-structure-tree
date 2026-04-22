@@ -13,7 +13,10 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "scripts": {
     "dev": "vite build --watch",
@@ -25,16 +28,16 @@
     "react-dom": ">=17"
   },
   "dependencies": {
-    "@mst/core": "workspace:*",
-    "@lit/react": "^1.0.5"
+    "@lit/react": "^1.0.5",
+    "@mst/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.11"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.9"
   },
   "publishConfig": {
     "access": "public"

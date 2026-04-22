@@ -1,9 +1,9 @@
 {
   "name": "model-structure-tree",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A cross-framework Web Components library (vanilla / React / Vue)",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "pnpm -r --parallel --filter \"./packages/*\" run dev",
     "build": "pnpm -r --filter \"./packages/*\" run build",
@@ -21,6 +21,6 @@
     "typescript": "^5.4.5"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }
