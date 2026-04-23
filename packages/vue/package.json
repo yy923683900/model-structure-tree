@@ -1,6 +1,6 @@
 {
   "name": "@mst-ui/vue",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Vue 3 bindings for @mst-ui/core Web Components",
   "type": "module",
   "main": "./dist/index.cjs",

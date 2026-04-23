@@ -1,6 +1,6 @@
 {
   "name": "@mst-ui/react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "React bindings for @mst-ui/core Web Components",
   "type": "module",
   "main": "./dist/index.cjs",
