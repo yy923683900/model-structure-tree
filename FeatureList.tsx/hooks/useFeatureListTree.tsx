@@ -1,10 +1,6 @@
-import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Key } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { TreeNodeTitle, type TreeNodeTitleProps } from "../TreeNodeTitle";
 import {
-  computeSearchExpandedKeys,
   isolateSubtreeVisibility,
   setAllTreeNodesVisible,
   structureInfoToTreeData,
@@ -14,72 +10,32 @@ import type { TreeNode } from "../types";
 
 import type { StructureInfo } from "@/stores/types";
 
-export type FeatureListTreeEditHandlers = Pick<
-  TreeNodeTitleProps,
-  "onEditModel" | "onEditProperties"
->;
+/** `mst-feature-tree` 上由 ref 调用的方法（与 @mst-ui/core 保持同步） */
+export type MstFeatureTreeElement = HTMLElement & {
+  selectByKey: (
+    key: string | null,
+    options?: { emit?: boolean }
+  ) => void;
+  selectByOid: (
+    oid: string | number | null,
+    options?: { emit?: boolean }
+  ) => string | null;
+  scrollToNode: (key: string) => void;
+  resetVisibility: () => void;
+  isolateNode: (key: string) => void;
+};
 
-export function useFeatureListTree(
-  structureInfo: StructureInfo | null,
-  editHandlers?: FeatureListTreeEditHandlers
-) {
-  const treeRef = useRef<any>(null);
+export function useFeatureListTree(structureInfo: StructureInfo | null) {
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
-  const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
-  const [searchValue, setSearchValue] = useState("");
-  const [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
-  const [autoExpandParent, setAutoExpandParent] = useState(true);
-  const [defaultExpandedKeys, setDefaultExpandedKeys] = useState<Key[]>([]);
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const featureTreeRef = useRef<MstFeatureTreeElement | null>(null);
 
   useEffect(() => {
     if (!structureInfo) return;
     const newTreeData = structureInfoToTreeData(structureInfo);
     setTreeData(newTreeData);
-    const firstLevelKeys = newTreeData.map((n) => n.key);
-    setDefaultExpandedKeys(firstLevelKeys);
-    setExpandedKeys(firstLevelKeys);
+    setSelectedKey(null);
   }, [structureInfo]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearchValue(searchValue), 300);
-    return () => clearTimeout(t);
-  }, [searchValue]);
-
-  const searchExpandedKeys = useMemo(
-    () => computeSearchExpandedKeys(treeData, debouncedSearchValue),
-    [debouncedSearchValue, treeData]
-  );
-
-  // 无搜索时不能只依赖 searchExpandedKeys：treeData 更新（如显隐切换）会重算 searchExpandedKeys，
-  // 而 computeSearchExpandedKeys 在空搜索下每次返回新 []，会误触发把展开态重置为 defaultExpandedKeys。
-  useEffect(() => {
-    if (!debouncedSearchValue) {
-      setExpandedKeys(defaultExpandedKeys);
-      setAutoExpandParent(false);
-    }
-  }, [debouncedSearchValue, defaultExpandedKeys]);
-
-  useEffect(() => {
-    if (debouncedSearchValue) {
-      setExpandedKeys(searchExpandedKeys);
-      setAutoExpandParent(true);
-    }
-  }, [debouncedSearchValue, searchExpandedKeys]);
-
-  const handleSearch = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => setSearchValue(e.target.value),
-    []
-  );
-
-  const onExpand = useCallback((keys: Key[]) => {
-    setExpandedKeys(keys);
-    setAutoExpandParent(false);
-  }, []);
-
-  const toggleVisibility = useCallback((key: string) => {
-    setTreeData((prev) => toggleTreeNodeVisibility(prev, key));
-  }, []);
 
   const applySelectionVisibility = useCallback((key: string | null) => {
     setTreeData((prev) =>
@@ -87,55 +43,18 @@ export function useFeatureListTree(
     );
   }, []);
 
-  const renderedTreeData = useMemo(() => {
-    const renderTreeNodes = (data: TreeNode[]): any =>
-      data.map((item) => {
-        const nodeTitle = (
-          <TreeNodeTitle
-            item={item}
-            searchValue={debouncedSearchValue}
-            onToggleVisibility={toggleVisibility}
-            onEditModel={editHandlers?.onEditModel}
-            onEditProperties={editHandlers?.onEditProperties}
-          />
-        );
-        if (item.children?.length) {
-          return {
-            ...item,
-            title: nodeTitle,
-            children: renderTreeNodes(item.children),
-          };
-        }
-        return { ...item, title: nodeTitle };
-      });
-    return renderTreeNodes(treeData);
-  }, [treeData, debouncedSearchValue, toggleVisibility, editHandlers]);
-
-  const scrollToTreeNode = useCallback((key: string) => {
-    const scroll = () => {
-      // top：选中节点对齐到可视区域顶部；offset 保持较小以免贴近底部时触发 rc-virtual-list 的 max 警告
-      treeRef.current?.scrollTo({ key, align: "top", offset: 8 });
-    };
-    // 展开后需等虚拟列表重算高度再滚
-    window.setTimeout(() => {
-      requestAnimationFrame(scroll);
-    }, 100);
+  const onMstVisibilityChange = useCallback((e: Event) => {
+    const d = (e as CustomEvent<{ key: string }>).detail;
+    if (!d?.key) return;
+    setTreeData((prev) => toggleTreeNodeVisibility(prev, d.key));
   }, []);
 
   return {
-    treeRef,
+    featureTreeRef,
     treeData,
-    selectedKeys,
-    setSelectedKeys,
-    searchValue,
-    handleSearch,
-    expandedKeys,
-    setExpandedKeys,
-    autoExpandParent,
-    setAutoExpandParent,
-    onExpand,
-    renderedTreeData,
-    scrollToTreeNode,
+    selectedKey,
+    setSelectedKey,
     applySelectionVisibility,
+    onMstVisibilityChange,
   };
 }

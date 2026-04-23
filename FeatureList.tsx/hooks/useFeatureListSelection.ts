@@ -1,7 +1,6 @@
 import { message } from "antd";
-import type { Dispatch, SetStateAction } from "react";
+import type { RefObject } from "react";
 import { useCallback, useEffect, useState } from "react";
-import type { Key } from "react";
 
 import {
   postCancelFeatureTransformEditToIframe,
@@ -9,12 +8,9 @@ import {
   postHighlightToFeatureIframe,
   postStartFeatureTransformEditToIframe,
 } from "../featureIframe";
-import {
-  findKeyByOid,
-  findNodeDataByKey,
-  getParentKeysForNode,
-} from "../treeUtils";
+import { findKeyByOid, findNodeDataByKey } from "../treeUtils";
 import type { TreeNode } from "../types";
+import type { MstFeatureTreeElement } from "./useFeatureListTree";
 
 import type { ConvertorStore } from "@/stores/convertor";
 
@@ -28,10 +24,8 @@ export function useFeatureListSelection(
   convertorStore: ConvertorStore,
   treeData: TreeNode[],
   findParquetDataByOid: FindParquet,
-  setSelectedKeys: (k: Key[]) => void,
-  setExpandedKeys: Dispatch<SetStateAction<Key[]>>,
-  setAutoExpandParent: (v: boolean) => void,
-  scrollToTreeNode: (key: string) => void,
+  setSelectedKey: (k: string | null) => void,
+  featureTreeRef: RefObject<MstFeatureTreeElement | null>,
   applySelectionVisibility: (nodeKey: string | null) => void
 ) {
   const [propertyModalVisible, setPropertyModalVisible] = useState(false);
@@ -41,6 +35,43 @@ export function useFeatureListSelection(
   > | null>(null);
 
   const mapLoc = convertorStore.mapLocationEnabled;
+
+  const runSelection = useCallback(
+    (key: string | null) => {
+      setPropertyModalVisible(false);
+      setPropertyModalData(null);
+      postCancelFeatureTransformEditToIframe(mapLoc);
+      setSelectedKey(key);
+      if (key) {
+        applySelectionVisibility(key);
+        const nodeData = findNodeDataByKey(key, treeData);
+        if (nodeData?.id !== undefined && nodeData.id !== null) {
+          convertorStore.setSelectedFeature(nodeData.id, nodeData.bbox);
+          setTimeout(
+            () =>
+              postHighlightToFeatureIframe(mapLoc, nodeData.id!, nodeData.bbox),
+            100
+          );
+        } else {
+          console.warn("节点数据无效或缺少 id:", nodeData);
+        }
+      } else {
+        applySelectionVisibility(null);
+        convertorStore.clearSelectedFeature();
+        setTimeout(() => postClearHighlightToFeatureIframe(mapLoc), 100);
+      }
+    },
+    [applySelectionVisibility, convertorStore, mapLoc, setSelectedKey, treeData]
+  );
+
+  const onMstSelect = useCallback(
+    (e: Event) => {
+      const detail = (e as CustomEvent<{ key: string | null }>).detail;
+      const key = detail.key;
+      runSelection(key);
+    },
+    [runSelection]
+  );
 
   const openPropertyEditorForNodeKey = useCallback(
     (nodeKey: string) => {
@@ -54,7 +85,7 @@ export function useFeatureListSelection(
         message.warning("未找到该构件的属性数据");
         return;
       }
-      setSelectedKeys([nodeKey]);
+      setSelectedKey(nodeKey);
       applySelectionVisibility(nodeKey);
       convertorStore.setSelectedFeature(nodeData.id, nodeData.bbox);
       setPropertyModalData(cloneRow(parquetRow as Record<string, unknown>));
@@ -70,7 +101,7 @@ export function useFeatureListSelection(
       convertorStore,
       findParquetDataByOid,
       mapLoc,
-      setSelectedKeys,
+      setSelectedKey,
       treeData,
     ]
   );
@@ -82,7 +113,7 @@ export function useFeatureListSelection(
         message.warning("该节点没有构件 id，无法编辑模型");
         return;
       }
-      setSelectedKeys([nodeKey]);
+      setSelectedKey(nodeKey);
       applySelectionVisibility(nodeKey);
       convertorStore.setSelectedFeature(nodeData.id, nodeData.bbox);
       setTimeout(
@@ -94,39 +125,7 @@ export function useFeatureListSelection(
         150
       );
     },
-    [applySelectionVisibility, convertorStore, mapLoc, setSelectedKeys, treeData]
-  );
-
-  const onSelect = useCallback(
-    (keys: Key[]) => {
-      setSelectedKeys(keys);
-      setPropertyModalVisible(false);
-      setPropertyModalData(null);
-      postCancelFeatureTransformEditToIframe(mapLoc);
-      if (keys.length > 0) {
-        const key = keys[0].toString();
-        applySelectionVisibility(key);
-        const nodeData = findNodeDataByKey(key, treeData);
-
-        if (nodeData?.id !== undefined && nodeData.id !== null) {
-          convertorStore.setSelectedFeature(nodeData.id, nodeData.bbox);
-          setTimeout(
-            () =>
-              postHighlightToFeatureIframe(mapLoc, nodeData.id!, nodeData.bbox),
-            100
-          );
-        } else {
-          console.warn("节点数据无效或缺少 id:", nodeData);
-        }
-      } else {
-        applySelectionVisibility(null);
-        convertorStore.clearSelectedFeature();
-        setPropertyModalVisible(false);
-        setPropertyModalData(null);
-        setTimeout(() => postClearHighlightToFeatureIframe(mapLoc), 100);
-      }
-    },
-    [applySelectionVisibility, convertorStore, mapLoc, setSelectedKeys, treeData]
+    [applySelectionVisibility, convertorStore, mapLoc, setSelectedKey, treeData]
   );
 
   useEffect(() => {
@@ -135,7 +134,8 @@ export function useFeatureListSelection(
 
       const { oid } = event.data;
       if (oid === null || oid === undefined) {
-        setSelectedKeys([]);
+        setSelectedKey(null);
+        featureTreeRef.current?.selectByKey(null, { emit: false });
         applySelectionVisibility(null);
         setPropertyModalVisible(false);
         setPropertyModalData(null);
@@ -147,18 +147,15 @@ export function useFeatureListSelection(
       const targetKey = findKeyByOid(oid, treeData);
       if (!targetKey) return;
 
-      const parentKeys = getParentKeysForNode(targetKey, treeData) || [];
-      setExpandedKeys((prev) => Array.from(new Set([...prev, ...parentKeys])));
-      setAutoExpandParent(true);
-      setSelectedKeys([targetKey]);
       applySelectionVisibility(targetKey);
+      setSelectedKey(targetKey);
 
       const nodeData = findNodeDataByKey(targetKey, treeData);
       if (nodeData?.id !== undefined) {
         convertorStore.setSelectedFeature(nodeData.id, null);
       }
 
-      scrollToTreeNode(targetKey);
+      featureTreeRef.current?.selectByOid(oid, { emit: false });
     };
 
     window.addEventListener("message", handleMessage);
@@ -166,11 +163,9 @@ export function useFeatureListSelection(
   }, [
     applySelectionVisibility,
     convertorStore,
+    featureTreeRef,
     mapLoc,
-    scrollToTreeNode,
-    setAutoExpandParent,
-    setExpandedKeys,
-    setSelectedKeys,
+    setSelectedKey,
     treeData,
   ]);
 
@@ -182,7 +177,7 @@ export function useFeatureListSelection(
   return {
     propertyModalVisible,
     propertyModalData,
-    onSelect,
+    onMstSelect,
     closePropertyModal,
     openPropertyEditorForNodeKey,
     openModelEditorForNodeKey,

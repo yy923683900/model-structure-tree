@@ -13,6 +13,7 @@ export type {
   FeatureTreeSearchDetail,
   FeatureTreeVisibilityDetail,
   FeatureTreeEditDetail,
+  MstSelectOptions,
 } from '@mst-ui/core/components/mst-feature-tree';
 
 export const MstButton = createComponent({

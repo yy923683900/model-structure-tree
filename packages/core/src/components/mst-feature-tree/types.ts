@@ -36,3 +36,8 @@ export interface FeatureTreeExpandDetail {
 export interface FeatureTreeSearchDetail {
   value: string;
 }
+
+/** `selectByKey` / `selectByOid` 时的选项：设为 `emit: false` 可只更新内部 UI，不向宿主派发 `mst-select`（如 iframe 反向同步时避免重复业务逻辑）。 */
+export interface MstSelectOptions {
+  emit?: boolean;
+}

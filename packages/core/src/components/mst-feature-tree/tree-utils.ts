@@ -60,7 +60,11 @@ export function getParentKeysForNode(
   return null;
 }
 
-/** Collect parent keys of every node whose title matches the search query. */
+/**
+ * Collect ALL ancestor keys of every node whose title matches the search
+ * query, so the matched node is visible (not hidden behind a collapsed
+ * ancestor).
+ */
 export function computeSearchExpandedKeys(
   treeData: FeatureTreeNode[],
   debouncedSearch: string,
@@ -69,16 +73,18 @@ export function computeSearchExpandedKeys(
   const expandKeys = new Set<string>();
   const q = debouncedSearch.toLowerCase();
 
-  const walk = (nodes: FeatureTreeNode[], parentKey?: string): void => {
+  const walk = (nodes: FeatureTreeNode[], ancestors: string[]): void => {
     for (const node of nodes) {
-      if (node.title.toLowerCase().includes(q) && parentKey) {
-        expandKeys.add(parentKey);
+      if (node.title.toLowerCase().includes(q)) {
+        for (const a of ancestors) expandKeys.add(a);
       }
-      if (node.children?.length) walk(node.children, node.key);
+      if (node.children?.length) {
+        walk(node.children, [...ancestors, node.key]);
+      }
     }
   };
 
-  walk(treeData);
+  walk(treeData, []);
   return [...expandKeys];
 }
 
@@ -157,4 +163,18 @@ export function setAllVisible(data: FeatureTreeNode[]): FeatureTreeNode[] {
     isVisible: true,
     children: n.children ? setAllVisible(n.children) : undefined,
   }));
+}
+
+/** 仅当「键结构」与父子关系变化时与另一棵树不同，用于区分配列更新 / 显隐等叶子属性更新 */
+function treeKeysStructure(
+  n: FeatureTreeNode,
+): [string, unknown] | [string, null] {
+  if (!n.children?.length) return [n.key, null];
+  return [n.key, n.children.map((c) => treeKeysStructure(c))];
+}
+
+export function getTreeKeysStructureSignature(
+  data: FeatureTreeNode[],
+): string {
+  return JSON.stringify(data.map((n) => treeKeysStructure(n)));
 }

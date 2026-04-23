@@ -1,6 +1,5 @@
-import { SearchOutlined } from "@ant-design/icons";
-import { Input, Tree } from "antd";
 import { useRef } from "react";
+import { MstFeatureTree, type FeatureTreeEditDetail } from "@mst-ui/react";
 import { observer } from "mobx-react-lite";
 
 import { FeaturePropertyModal } from "./FeaturePropertyModal";
@@ -19,29 +18,18 @@ function FeatureList() {
   const openModelEditorRef = useRef<(nodeKey: string) => void>(() => {});
 
   const {
-    treeRef,
+    featureTreeRef,
     treeData,
-    selectedKeys,
-    setSelectedKeys,
-    searchValue,
-    handleSearch,
-    expandedKeys,
-    setExpandedKeys,
-    autoExpandParent,
-    setAutoExpandParent,
-    onExpand,
-    renderedTreeData,
-    scrollToTreeNode,
+    selectedKey,
+    setSelectedKey,
     applySelectionVisibility,
-  } = useFeatureListTree(store.convertorStore.structureInfo, {
-    onEditProperties: (nodeKey) => openPropertyEditorRef.current(nodeKey),
-    onEditModel: (nodeKey) => openModelEditorRef.current(nodeKey),
-  });
+    onMstVisibilityChange,
+  } = useFeatureListTree(store.convertorStore.structureInfo);
 
   const {
     propertyModalVisible,
     propertyModalData,
-    onSelect,
+    onMstSelect,
     closePropertyModal,
     openPropertyEditorForNodeKey,
     openModelEditorForNodeKey,
@@ -49,47 +37,45 @@ function FeatureList() {
     store.convertorStore,
     treeData,
     findParquetDataByOid,
-    setSelectedKeys,
-    setExpandedKeys,
-    setAutoExpandParent,
-    scrollToTreeNode,
+    setSelectedKey,
+    featureTreeRef,
     applySelectionVisibility
   );
 
   openPropertyEditorRef.current = openPropertyEditorForNodeKey;
   openModelEditorRef.current = openModelEditorForNodeKey;
 
+  const onMstEditModel = (e: Event) => {
+    const { key } = (e as CustomEvent<FeatureTreeEditDetail>).detail;
+    openModelEditorRef.current(key);
+  };
+
+  const onMstEditProperties = (e: Event) => {
+    const { key } = (e as CustomEvent<FeatureTreeEditDetail>).detail;
+    openPropertyEditorRef.current(key);
+  };
+
   return (
     <Container>
-      <div style={{ padding: "12px 10px" }}>
-        <Input
-          placeholder="搜索"
-          prefix={<SearchOutlined />}
-          value={searchValue}
-          onChange={handleSearch}
-          style={{ width: "100%" }}
-        />
-      </div>
       <div
         style={{
-          height: "calc(100% - 52px)",
-          maxHeight: "750px",
+          height: "calc(100% - 0px)",
+          maxHeight: "802px",
           overflow: "hidden",
-          padding: "0 10px",
+          padding: "0 10px 12px",
         }}
       >
-        <Tree
-          ref={treeRef}
-          showLine
-          blockNode
-          itemHeight={40}
+        <MstFeatureTree
+          ref={featureTreeRef}
+          data={treeData}
+          selectedKey={selectedKey}
+          fullWidth
           height={750}
-          selectedKeys={selectedKeys}
-          expandedKeys={expandedKeys}
-          autoExpandParent={autoExpandParent}
-          onExpand={onExpand}
-          onSelect={onSelect}
-          treeData={renderedTreeData}
+          allowDeselect={false}
+          onMstSelect={onMstSelect}
+          onMstVisibilityChange={onMstVisibilityChange}
+          onMstEditModel={onMstEditModel}
+          onMstEditProperties={onMstEditProperties}
         />
       </div>
 

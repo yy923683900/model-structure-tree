@@ -6,4 +6,5 @@ export type {
   FeatureTreeSearchDetail,
   FeatureTreeSelectDetail,
   FeatureTreeVisibilityDetail,
+  MstSelectOptions,
 } from './types';

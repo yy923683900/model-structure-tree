@@ -16,6 +16,7 @@ import {
   findKeyByOid,
   findNodeByKey,
   getParentKeysForNode,
+  getTreeKeysStructureSignature,
   isolateSubtree,
   normalizeTree,
   setAllVisible,
@@ -28,6 +29,7 @@ import type {
   FeatureTreeSearchDetail,
   FeatureTreeSelectDetail,
   FeatureTreeVisibilityDetail,
+  MstSelectOptions,
 } from './types';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -36,11 +38,13 @@ const SEARCH_DEBOUNCE_MS = 300;
  * `<mst-feature-tree>` – A model structure tree (framework-agnostic Web Component).
  *
  * Properties (set via DOM, not attributes unless marked):
- * - `data`          – `FeatureTreeNode[]`, tree source
- * - `selectedKey`   – `string | null`, controlled selection
- * - `searchable`    – `boolean` attribute, show search input (default: true)
- * - `height`        – `number` attribute, scroll area height (default: 750)
- * - `width`         – `number` attribute, container width (default: 500)
+ * - `data`            – `FeatureTreeNode[]`, tree source
+ * - `selectedKey`     – `string | null`, controlled selection
+ * - `searchable`      – `boolean` attribute, show search input (default: true)
+ * - `height`          – `number` attribute, scroll area height (default: 750)
+ * - `width`           – `number` attribute, host width in px when not `fullWidth` (default: 500)
+ * - `fullWidth`       – `boolean` attribute, host width 100% (default: false)
+ * - `allowDeselect`  – `boolean` attribute, click same row to clear selection (default: false)
  *
  * Events (CustomEvent):
  * - `mst-select`             – `{ key, node }`
@@ -51,8 +55,8 @@ const SEARCH_DEBOUNCE_MS = 300;
  * - `mst-edit-properties`    – `{ key, node }`
  *
  * Methods:
- * - `selectByKey(key)`   – programmatic selection (scrolls into view)
- * - `selectByOid(oid)`   – select the node whose `id` matches `oid`
+ * - `selectByKey(key, { emit? })` – programmatic selection; `emit: false` 不触发 `mst-select`
+ * - `selectByOid(oid, { emit? })` – 同 `id` 选中
  * - `scrollToNode(key)`  – scroll a row into view
  * - `resetVisibility()`  – set all nodes visible
  * - `isolateNode(key)`   – only keep target subtree visible
@@ -76,6 +80,12 @@ export class MstFeatureTree extends LitElement {
   @property({ type: Number })
   width = 500;
 
+  @property({ type: Boolean, attribute: 'full-width' })
+  fullWidth = false;
+
+  @property({ type: Boolean, attribute: 'allow-deselect' })
+  allowDeselect = false;
+
   @state() private _treeData: FeatureTreeNode[] = [];
   @state() private _expandedKeys = new Set<string>();
   @state() private _selectedKey: string | null = null;
@@ -85,23 +95,48 @@ export class MstFeatureTree extends LitElement {
   @state() private _menuPos: { top: number; left: number } = { top: 0, left: 0 };
 
   private _defaultExpanded: string[] = [];
+  /** 上次 `data` 的键结构签名；结构未变时（如仅显隐）保留展开与搜索展开结果 */
+  private _lastDataStructureSig = '';
   private _searchTimer?: number;
   private _outsideClickBound?: (e: MouseEvent) => void;
 
   willUpdate(changed: Map<PropertyKey, unknown>): void {
     if (changed.has('data')) {
-      this._treeData = normalizeTree(this.data ?? []);
-      this._defaultExpanded = this._treeData.map((n) => n.key);
-      this._expandedKeys = new Set(this._defaultExpanded);
+      const raw = this.data ?? [];
+      const nextSig = getTreeKeysStructureSignature(raw);
+      this._treeData = normalizeTree(raw);
+      if (
+        this._lastDataStructureSig === '' ||
+        nextSig !== this._lastDataStructureSig
+      ) {
+        this._defaultExpanded = this._treeData.map((n) => n.key);
+        this._expandedKeys = new Set(this._defaultExpanded);
+      }
+      this._lastDataStructureSig = nextSig;
     }
     if (changed.has('selectedKey')) {
       this._selectedKey = this.selectedKey ?? null;
     }
   }
 
+  firstUpdated(changed: Map<PropertyKey, unknown>): void {
+    super.firstUpdated(changed);
+    this._syncHostWidth();
+  }
+
   updated(changed: Map<PropertyKey, unknown>): void {
-    if (changed.has('width')) {
+    if (changed.has('width') || changed.has('fullWidth')) {
+      this._syncHostWidth();
+    }
+  }
+
+  private _syncHostWidth(): void {
+    if (this.fullWidth) {
+      this.style.setProperty('width', '100%');
+      this.style.setProperty('min-width', '0');
+    } else {
       this.style.setProperty('width', `${this.width}px`);
+      this.style.removeProperty('min-width');
     }
   }
 
@@ -113,8 +148,14 @@ export class MstFeatureTree extends LitElement {
 
   // ------------------------------------------------------------------ Public API
 
-  /** Select a node by key. Also expands the path and scrolls into view. */
-  selectByKey(key: string | null): void {
+  /**
+   * Select a node by key. Also expands the path and scrolls into view.
+   * @param options.emit 为 `false` 时不向宿主派发 `mst-select`（如外部同步选中，避免重复执行业务）。
+   */
+  selectByKey(
+    key: string | null,
+    options: MstSelectOptions = {},
+  ): void {
     this._selectedKey = key;
     if (key) {
       const parents = getParentKeysForNode(key, this._treeData) ?? [];
@@ -124,17 +165,22 @@ export class MstFeatureTree extends LitElement {
     } else {
       this._treeData = setAllVisible(this._treeData);
     }
-    this._emitSelect(key);
+    if (options.emit !== false) {
+      this._emitSelect(key);
+    }
   }
 
   /** Select a node by its `id` field. Returns the matched key, if any. */
-  selectByOid(oid: string | number | null): string | null {
+  selectByOid(
+    oid: string | number | null,
+    options: MstSelectOptions = {},
+  ): string | null {
     if (oid === null || oid === undefined) {
-      this.selectByKey(null);
+      this.selectByKey(null, options);
       return null;
     }
     const key = findKeyByOid(oid, this._treeData) ?? null;
-    if (key) this.selectByKey(key);
+    if (key) this.selectByKey(key, options);
     return key;
   }
 
@@ -350,7 +396,12 @@ export class MstFeatureTree extends LitElement {
   }
 
   private _onRowClick(_e: MouseEvent, node: FeatureTreeNode): void {
-    const nextKey = this._selectedKey === node.key ? null : node.key;
+    const nextKey =
+      this._selectedKey === node.key
+        ? this.allowDeselect
+          ? null
+          : node.key
+        : node.key;
     this._selectedKey = nextKey;
     if (nextKey) {
       this._treeData = isolateSubtree(this._treeData, nextKey);
