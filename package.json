@@ -13,7 +13,10 @@
     "play:vanilla": "pnpm --filter playground-vanilla run dev",
     "play:react": "pnpm --filter playground-react run dev",
     "play:vue": "pnpm --filter playground-vue run dev",
-    "clean": "pnpm -r exec rimraf dist node_modules"
+    "clean": "pnpm -r exec rimraf dist node_modules",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm -r --filter \"./packages/*\" run build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
