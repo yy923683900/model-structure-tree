@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { FeatureTreeNode, MstTreeNode } from '@mst/vue';
+import type { FeatureTreeNode, MstTreeNode } from '@mst-ui/vue';
 
 const data = ref<MstTreeNode[]>([
   {

@@ -9,7 +9,7 @@ export default defineConfig({
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
     rollupOptions: {
-      external: ['vue', /^@mst\/core/, /^lit($|\/)/],
+      external: ['vue', /^@mst-ui\/core/, /^lit($|\/)/],
     },
     sourcemap: true,
     target: 'es2020',

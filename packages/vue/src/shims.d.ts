@@ -13,7 +13,7 @@ import type {
 /**
  * Augments Vue's JSX/template so `<mst-*>` tags have proper types.
  *
- * Consumers importing anything from `@mst/vue` will automatically get these
+ * Consumers importing anything from `@mst-ui/vue` will automatically get these
  * typings in their SFC templates.
  */
 declare module 'vue' {

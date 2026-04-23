@@ -1,5 +1,5 @@
 {
-  "name": "@mst/core",
+  "name": "@mst-ui/core",
   "version": "0.0.1",
   "description": "Web Components core built with Lit",
   "type": "module",

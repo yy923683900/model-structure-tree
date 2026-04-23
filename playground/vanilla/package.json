@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mst/core": "workspace:*"
+    "@mst-ui/core": "workspace:*"
   },
   "devDependencies": {
     "vite": "^8.0.9"

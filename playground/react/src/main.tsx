@@ -5,7 +5,7 @@ import {
   MstTree,
   type FeatureTreeNode,
   type MstTreeNode,
-} from "@mst/react";
+} from "@mst-ui/react";
 
 const treeData: MstTreeNode[] = [
   {

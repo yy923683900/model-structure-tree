@@ -7,18 +7,19 @@
   "scripts": {
     "dev": "pnpm -r --parallel --filter \"./packages/*\" run dev",
     "build": "pnpm -r --filter \"./packages/*\" run build",
-    "build:core": "pnpm --filter @mst/core run build",
-    "build:react": "pnpm --filter @mst/react run build",
-    "build:vue": "pnpm --filter @mst/vue run build",
+    "build:core": "pnpm --filter @mst-ui/core run build",
+    "build:react": "pnpm --filter @mst-ui/react run build",
+    "build:vue": "pnpm --filter @mst-ui/vue run build",
     "play:vanilla": "pnpm --filter playground-vanilla run dev",
     "play:react": "pnpm --filter playground-react run dev",
     "play:vue": "pnpm --filter playground-vue run dev",
     "clean": "pnpm -r exec rimraf dist node_modules"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@types/node": "^25.6.0",
-    "rimraf": "^5.0.5",
-    "typescript": "^5.4.5"
+    "rimraf": "^6.1.3",
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=20"

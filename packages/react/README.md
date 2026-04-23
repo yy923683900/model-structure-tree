@@ -1,9 +1,9 @@
-# @mst/react
+# @mst-ui/react
 
-React bindings for `@mst/core`.
+React bindings for `@mst-ui/core`.
 
 ```tsx
-import { MstButton, MstTree } from '@mst/react';
+import { MstButton, MstTree } from '@mst-ui/react';
 
 export default function App() {
   return (

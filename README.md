@@ -4,9 +4,9 @@
 
 | 包名         | 用途                           | 说明                                    |
 | ------------ | ------------------------------ | --------------------------------------- |
-| `@mst/core`  | 原生 Web Components（Lit）     | 任意 HTML / Vue / Svelte / Angular 项目 |
-| `@mst/react` | 基于 `@lit/react` 的 React 绑定 | 原生 JSX 事件、受控属性、ref           |
-| `@mst/vue`   | Vue 3 适配插件 + 类型声明      | `app.use(MstPlugin)` 即可               |
+| `@mst-ui/core`  | 原生 Web Components（Lit）     | 任意 HTML / Vue / Svelte / Angular 项目 |
+| `@mst-ui/react` | 基于 `@lit/react` 的 React 绑定 | 原生 JSX 事件、受控属性、ref           |
+| `@mst-ui/vue`   | Vue 3 适配插件 + 类型声明      | `app.use(MstPlugin)` 即可               |
 
 ---
 

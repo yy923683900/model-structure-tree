@@ -13,7 +13,7 @@ export default defineConfig({
         'react',
         'react-dom',
         'react/jsx-runtime',
-        /^@mst\/core/,
+        /^@mst-ui\/core/,
         /^lit($|\/)/,
       ],
     },

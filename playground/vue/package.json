@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mst/vue": "workspace:*",
+    "@mst-ui/vue": "workspace:*",
     "vue": "^3.5.33"
   },
   "devDependencies": {

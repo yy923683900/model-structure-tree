@@ -1,11 +1,11 @@
-# @mst/vue
+# @mst-ui/vue
 
-Vue 3 bindings for `@mst/core`.
+Vue 3 bindings for `@mst-ui/core`.
 
 ## 1. Install
 
 ```bash
-npm i @mst/vue
+npm i @mst-ui/vue
 ```
 
 ## 2. Configure Vue compiler
@@ -33,7 +33,7 @@ export default {
 ```ts
 // main.ts
 import { createApp } from 'vue';
-import { MstPlugin } from '@mst/vue';
+import { MstPlugin } from '@mst-ui/vue';
 import App from './App.vue';
 
 createApp(App).use(MstPlugin).mount('#app');

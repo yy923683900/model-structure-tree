@@ -1,7 +1,7 @@
 {
-  "name": "@mst/vue",
+  "name": "@mst-ui/vue",
   "version": "0.0.1",
-  "description": "Vue 3 bindings for @mst/core Web Components",
+  "description": "Vue 3 bindings for @mst-ui/core Web Components",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -27,7 +27,7 @@
     "vue": "^3.3.0"
   },
   "dependencies": {
-    "@mst/core": "workspace:*"
+    "@mst-ui/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

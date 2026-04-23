@@ -2,7 +2,7 @@ import {
   defineAll,
   type FeatureTreeNode,
   type MstTreeNode,
-} from '@mst/core';
+} from '@mst-ui/core';
 
 defineAll();
 
