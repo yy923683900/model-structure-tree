@@ -37,7 +37,13 @@ export interface FeatureTreeSearchDetail {
   value: string;
 }
 
-/** `selectByKey` / `selectByOid` 时的选项：设为 `emit: false` 可只更新内部 UI，不向宿主派发 `mst-select`（如 iframe 反向同步时避免重复业务逻辑）。 */
+/**
+ * `selectByKey` / `selectByOid` 时的选项。
+ * - `emit`：设为 `false` 仅更新内部 UI，不向宿主派发 `mst-select`（例如 iframe 反向同步时避免重复执行业务逻辑）。
+ * - `isolate`：设为 `false` 仅定位/高亮该行（展开父级、滚动到视口、更新选中态），不改变当前节点的显隐状态；
+ *   取消选中（`key/oid === null`）时设为 `false` 也不会重置所有节点可见性。默认 `true`。
+ */
 export interface MstSelectOptions {
   emit?: boolean;
+  isolate?: boolean;
 }

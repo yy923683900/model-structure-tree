@@ -11,14 +11,13 @@ import type { TreeNode } from "../types";
 import type { StructureInfo } from "@/stores/types";
 
 /** `mst-feature-tree` 上由 ref 调用的方法（与 @mst-ui/core 保持同步） */
+export type MstSelectOptions = { emit?: boolean; isolate?: boolean };
+
 export type MstFeatureTreeElement = HTMLElement & {
-  selectByKey: (
-    key: string | null,
-    options?: { emit?: boolean }
-  ) => void;
+  selectByKey: (key: string | null, options?: MstSelectOptions) => void;
   selectByOid: (
     oid: string | number | null,
-    options?: { emit?: boolean }
+    options?: MstSelectOptions
   ) => string | null;
   scrollToNode: (key: string) => void;
   resetVisibility: () => void;

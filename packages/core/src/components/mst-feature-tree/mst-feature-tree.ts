@@ -150,19 +150,24 @@ export class MstFeatureTree extends LitElement {
 
   /**
    * Select a node by key. Also expands the path and scrolls into view.
-   * @param options.emit 为 `false` 时不向宿主派发 `mst-select`（如外部同步选中，避免重复执行业务）。
+   * @param options.emit 为 `false` 时不向宿主派发 `mst-select`。
+   * @param options.isolate 为 `false` 时仅定位（展开+滚动+选中态），不改变显隐状态；
+   *   取消选中（`key === null`）时也不会 `resetVisibility`。默认 `true`。
    */
   selectByKey(
     key: string | null,
     options: MstSelectOptions = {},
   ): void {
+    const isolate = options.isolate !== false;
     this._selectedKey = key;
     if (key) {
       const parents = getParentKeysForNode(key, this._treeData) ?? [];
       this._expandedKeys = new Set([...this._expandedKeys, ...parents]);
-      this._treeData = isolateSubtree(this._treeData, key);
+      if (isolate) {
+        this._treeData = isolateSubtree(this._treeData, key);
+      }
       queueMicrotask(() => this.scrollToNode(key));
-    } else {
+    } else if (isolate) {
       this._treeData = setAllVisible(this._treeData);
     }
     if (options.emit !== false) {

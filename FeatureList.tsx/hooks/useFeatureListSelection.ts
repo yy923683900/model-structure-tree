@@ -135,8 +135,10 @@ export function useFeatureListSelection(
       const { oid } = event.data;
       if (oid === null || oid === undefined) {
         setSelectedKey(null);
-        featureTreeRef.current?.selectByKey(null, { emit: false });
-        applySelectionVisibility(null);
+        featureTreeRef.current?.selectByKey(null, {
+          emit: false,
+          isolate: false,
+        });
         setPropertyModalVisible(false);
         setPropertyModalData(null);
         convertorStore.clearSelectedFeature();
@@ -147,7 +149,6 @@ export function useFeatureListSelection(
       const targetKey = findKeyByOid(oid, treeData);
       if (!targetKey) return;
 
-      applySelectionVisibility(targetKey);
       setSelectedKey(targetKey);
 
       const nodeData = findNodeDataByKey(targetKey, treeData);
@@ -155,13 +156,15 @@ export function useFeatureListSelection(
         convertorStore.setSelectedFeature(nodeData.id, null);
       }
 
-      featureTreeRef.current?.selectByOid(oid, { emit: false });
+      featureTreeRef.current?.selectByOid(oid, {
+        emit: false,
+        isolate: false,
+      });
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [
-    applySelectionVisibility,
     convertorStore,
     featureTreeRef,
     mapLoc,
