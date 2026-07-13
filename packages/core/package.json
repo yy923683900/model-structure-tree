@@ -1,6 +1,6 @@
 {
   "name": "@mst-ui/core",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Web Components core built with Lit",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -35,11 +35,11 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "lit": "^3.1.4"
+    "lit": "^3.3.3"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "vite": "^8.0.10"
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4"
   },
   "publishConfig": {
     "access": "public"
