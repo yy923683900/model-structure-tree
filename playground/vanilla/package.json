@@ -12,6 +12,6 @@
     "@mst-ui/core": "workspace:*"
   },
   "devDependencies": {
-    "vite": "^8.0.10"
+    "vite": "catalog:"
   }
 }

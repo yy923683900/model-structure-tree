@@ -1,5 +1,10 @@
 packages:
   - 'packages/*'
   - 'playground/*'
+
+catalog:
+  typescript: ^7.0.2
+  vite: ^8.1.4
+
 allowBuilds:
   esbuild: false
