@@ -178,3 +178,28 @@ export function getTreeKeysStructureSignature(
 ): string {
   return JSON.stringify(data.map((n) => treeKeysStructure(n)));
 }
+
+/** 一行 = 树在「展开状态」下实际可见的一个节点，depth 用于缩进。 */
+export interface FlatRow {
+  node: FeatureTreeNode;
+  depth: number;
+}
+
+/**
+ * 按显示顺序把树拍平成行列表，只为「已展开」的节点继续下钻。
+ * 供虚拟滚动使用：DOM 只渲染视口内的行，数据层始终全量。
+ */
+export function flattenVisibleTree(
+  nodes: FeatureTreeNode[],
+  expandedKeys: Set<string>,
+  depth = 0,
+  out: FlatRow[] = [],
+): FlatRow[] {
+  for (const node of nodes) {
+    out.push({ node, depth });
+    if (node.children?.length && expandedKeys.has(node.key)) {
+      flattenVisibleTree(node.children, expandedKeys, depth + 1, out);
+    }
+  }
+  return out;
+}

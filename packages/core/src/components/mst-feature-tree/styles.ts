@@ -75,11 +75,16 @@ export const featureTreeStyles = css`
     padding: 0 10px 8px;
   }
 
-  ul.tree-list,
-  ul.tree-list ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  /* Virtual scrolling: spacer keeps the real scrollbar size, window holds only
+     the rows inside (plus overscan) the viewport and is shifted into place. */
+  .virtual-spacer {
+    position: relative;
+  }
+  .virtual-window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
   }
 
   .row {

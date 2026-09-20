@@ -15,6 +15,7 @@ import {
   computeSearchExpandedKeys,
   findKeyByOid,
   findNodeByKey,
+  flattenVisibleTree,
   getParentKeysForNode,
   getTreeKeysStructureSignature,
   isolateSubtree,
@@ -22,6 +23,7 @@ import {
   setAllVisible,
   toggleNodeVisibility,
 } from './tree-utils';
+import type { FlatRow } from './tree-utils';
 import type {
   FeatureTreeEditDetail,
   FeatureTreeExpandDetail,
@@ -60,6 +62,13 @@ const SEARCH_DEBOUNCE_MS = 300;
  * - `scrollToNode(key)`  – scroll a row into view
  * - `resetVisibility()`  – set all nodes visible
  * - `isolateNode(key)`   – only keep target subtree visible
+ *
+ * Rendering notes:
+ * - Built-in virtual scrolling: the tree is flattened to visible rows and only
+ *   the viewport window (plus overscan) is rendered, so trees with tens of
+ *   thousands of nodes stay responsive.
+ * - Requires a uniform row height (`--mst-row-height`, default 40px);
+ *   `scrollToNode` and the virtual window math rely on it.
  */
 @customElement('mst-feature-tree')
 export class MstFeatureTree extends LitElement {
@@ -93,7 +102,21 @@ export class MstFeatureTree extends LitElement {
   @state() private _debouncedSearch = '';
   @state() private _menuForKey: string | null = null;
   @state() private _menuPos: { top: number; left: number } = { top: 0, left: 0 };
+  /** 拍平后的可见行（含 depth），供虚拟滚动渲染。 */
+  @state() private _flatRows: FlatRow[] = [];
+  /** 滚动容器当前 scrollTop，驱动虚拟窗口计算。 */
+  @state() private _scrollTop = 0;
+  /** 滚动容器视口高度，由 ResizeObserver 维护。 */
+  @state() private _viewportHeight = 0;
 
+  /** key → 行号，用于 `scrollToNode` 定位。 */
+  private _rowIndexByKey = new Map<string, number>();
+  /** 行高（px），取自 `--mst-row-height`；虚拟滚动的行高基准。 */
+  private _rowHeight = 40;
+  /** 虚拟滚动窗口上下各多渲染的行数，滚动更平滑。 */
+  private static readonly OVERSCAN_ROWS = 10;
+  private _scrollRaf?: number;
+  private _resizeObserver?: ResizeObserver;
   private _defaultExpanded: string[] = [];
   /** 上次 `data` 的键结构签名；结构未变时（如仅显隐）保留展开与搜索展开结果 */
   private _lastDataStructureSig = '';
@@ -101,6 +124,7 @@ export class MstFeatureTree extends LitElement {
   private _outsideClickBound?: (e: MouseEvent) => void;
 
   willUpdate(changed: Map<PropertyKey, unknown>): void {
+    let treeDataChanged = false;
     if (changed.has('data')) {
       const raw = this.data ?? [];
       const nextSig = getTreeKeysStructureSignature(raw);
@@ -113,15 +137,52 @@ export class MstFeatureTree extends LitElement {
         this._expandedKeys = new Set(this._defaultExpanded);
       }
       this._lastDataStructureSig = nextSig;
+      treeDataChanged = true;
     }
     if (changed.has('selectedKey')) {
       this._selectedKey = this.selectedKey ?? null;
     }
+    // `_treeData` / `_expandedKeys` 可能在本周期内被上面分支或其他方法改写，
+    // 任一变化时重算拍平行列表（纯数据操作，万级节点也在毫秒级）。
+    if (
+      treeDataChanged ||
+      changed.has('_treeData') ||
+      changed.has('_expandedKeys')
+    ) {
+      this._recomputeFlatRows();
+    }
+  }
+
+  private _recomputeFlatRows(): void {
+    this._flatRows = flattenVisibleTree(this._treeData, this._expandedKeys);
+    const index = new Map<string, number>();
+    for (let i = 0; i < this._flatRows.length; i++) {
+      index.set(this._flatRows[i].node.key, i);
+    }
+    this._rowIndexByKey = index;
+  }
+
+  private _refreshRowHeight(): void {
+    const parsed = parseFloat(
+      getComputedStyle(this).getPropertyValue('--mst-row-height'),
+    );
+    if (Number.isFinite(parsed) && parsed > 0) this._rowHeight = parsed;
   }
 
   firstUpdated(changed: Map<PropertyKey, unknown>): void {
     super.firstUpdated(changed);
     this._syncHostWidth();
+    this._refreshRowHeight();
+    const sc = this.renderRoot.querySelector<HTMLElement>('.tree-scroll');
+    if (sc) {
+      this._viewportHeight = sc.clientHeight;
+      if (typeof ResizeObserver !== 'undefined') {
+        this._resizeObserver = new ResizeObserver(() => {
+          this._viewportHeight = sc.clientHeight;
+        });
+        this._resizeObserver.observe(sc);
+      }
+    }
   }
 
   updated(changed: Map<PropertyKey, unknown>): void {
@@ -144,6 +205,12 @@ export class MstFeatureTree extends LitElement {
     super.disconnectedCallback();
     if (this._searchTimer) window.clearTimeout(this._searchTimer);
     this._unbindOutsideClick();
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = undefined;
+    if (this._scrollRaf !== undefined) {
+      cancelAnimationFrame(this._scrollRaf);
+      this._scrollRaf = undefined;
+    }
   }
 
   // ------------------------------------------------------------------ Public API
@@ -190,10 +257,13 @@ export class MstFeatureTree extends LitElement {
   }
 
   scrollToNode(key: string): void {
-    const el = this.renderRoot.querySelector<HTMLElement>(
-      `[data-row-key="${CSS.escape(key)}"]`,
-    );
-    if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const index = this._rowIndexByKey.get(key);
+    if (index === undefined) return;
+    const sc = this.renderRoot.querySelector<HTMLElement>('.tree-scroll');
+    if (!sc) return;
+    const top = Math.max(0, index * this._rowHeight);
+    if (Math.abs(sc.scrollTop - top) < 0.5) return;
+    sc.scrollTo({ top, behavior: 'smooth' });
   }
 
   resetVisibility(): void {
@@ -217,15 +287,44 @@ export class MstFeatureTree extends LitElement {
             ? `calc(100% - 56px)`
             : '100%',
         })}
+        @scroll=${this._onScroll}
         @click=${this._onScrollAreaClick}
       >
-        ${this._treeData.length === 0
+        ${this._flatRows.length === 0
           ? html`<div class="empty">暂无数据</div>`
-          : html`<ul class="tree-list">
-              ${this._treeData.map((n) => this._renderNode(n, 0))}
-            </ul>`}
+          : this._renderWindow()}
       </div>
       ${this._menuForKey ? this._renderDropdown() : nothing}
+    `;
+  }
+
+  /**
+   * 自实现虚拟滚动：`.virtual-spacer` 撑起总高度产生真实滚动条，
+   * `.virtual-window` 平移到窗口起点，仅渲染视口内（含 overscan）的行。
+   */
+  private _renderWindow(): TemplateResult {
+    const total = this._flatRows.length;
+    const rowH = this._rowHeight;
+    const overscan = MstFeatureTree.OVERSCAN_ROWS;
+    const viewportH = this._viewportHeight || this.height;
+    const start = Math.max(0, Math.floor(this._scrollTop / rowH) - overscan);
+    const end = Math.min(
+      total,
+      Math.ceil((this._scrollTop + viewportH) / rowH) + overscan,
+    );
+    const rows = this._flatRows.slice(start, end);
+    return html`
+      <div
+        class="virtual-spacer"
+        style=${styleMap({ height: `${total * rowH}px` })}
+      >
+        <div
+          class="virtual-window"
+          style=${styleMap({ transform: `translateY(${start * rowH}px)` })}
+        >
+          ${rows.map((r) => this._renderRow(r.node, r.depth))}
+        </div>
+      </div>
     `;
   }
 
@@ -245,7 +344,7 @@ export class MstFeatureTree extends LitElement {
     `;
   }
 
-  private _renderNode(node: FeatureTreeNode, depth: number): TemplateResult {
+  private _renderRow(node: FeatureTreeNode, depth: number): TemplateResult {
     const hasChildren = !!node.children?.length;
     const expanded = this._expandedKeys.has(node.key);
     const selected = this._selectedKey === node.key;
@@ -257,57 +356,50 @@ export class MstFeatureTree extends LitElement {
     }
 
     return html`
-      <li>
-        <div
-          class="row"
-          data-row-key=${node.key}
-          aria-selected=${selected}
-          @click=${(e: MouseEvent) => this._onRowClick(e, node)}
+      <div
+        class="row"
+        data-row-key=${node.key}
+        aria-selected=${selected}
+        @click=${(e: MouseEvent) => this._onRowClick(e, node)}
+      >
+        ${indentCells}
+        <span
+          class=${classMap({
+            switcher: true,
+            expanded,
+            leaf: !hasChildren,
+          })}
+          @click=${(e: MouseEvent) => {
+            e.stopPropagation();
+            if (hasChildren) this._toggleExpand(node.key);
+          }}
         >
-          ${indentCells}
-          <span
-            class=${classMap({
-              switcher: true,
-              expanded,
-              leaf: !hasChildren,
-            })}
-            @click=${(e: MouseEvent) => {
-              e.stopPropagation();
-              if (hasChildren) this._toggleExpand(node.key);
-            }}
-          >
-            ${hasChildren ? chevronRightIcon : ''}
-          </span>
-          <div class="row-body">
-            <div class=${classMap({ title: true, hidden })}>
-              ${this._renderTitle(node.title)}
-            </div>
-            <div class="actions" @click=${(e: MouseEvent) => e.stopPropagation()}>
-              <button
-                type="button"
-                class=${classMap({ 'action-btn': true, muted: hidden })}
-                title="编辑"
-                @click=${(e: MouseEvent) => this._openEditMenu(e, node.key)}
-              >
-                ${editIcon}
-              </button>
-              <button
-                type="button"
-                class=${classMap({ 'action-btn': true, muted: hidden })}
-                title=${node.isVisible ? '隐藏' : '显示'}
-                @click=${(e: MouseEvent) => this._toggleVisibility(e, node.key)}
-              >
-                ${node.isVisible ? eyeOpenIcon : eyeClosedIcon}
-              </button>
-            </div>
+          ${hasChildren ? chevronRightIcon : ''}
+        </span>
+        <div class="row-body">
+          <div class=${classMap({ title: true, hidden })}>
+            ${this._renderTitle(node.title)}
+          </div>
+          <div class="actions" @click=${(e: MouseEvent) => e.stopPropagation()}>
+            <button
+              type="button"
+              class=${classMap({ 'action-btn': true, muted: hidden })}
+              title="编辑"
+              @click=${(e: MouseEvent) => this._openEditMenu(e, node.key)}
+            >
+              ${editIcon}
+            </button>
+            <button
+              type="button"
+              class=${classMap({ 'action-btn': true, muted: hidden })}
+              title=${node.isVisible ? '隐藏' : '显示'}
+              @click=${(e: MouseEvent) => this._toggleVisibility(e, node.key)}
+            >
+              ${node.isVisible ? eyeOpenIcon : eyeClosedIcon}
+            </button>
           </div>
         </div>
-        ${hasChildren && expanded
-          ? html`<ul>
-              ${node.children!.map((c) => this._renderNode(c, depth + 1))}
-            </ul>`
-          : nothing}
-      </li>
+      </div>
     `;
   }
 
@@ -343,6 +435,16 @@ export class MstFeatureTree extends LitElement {
   }
 
   // ------------------------------------------------------------------ Handlers
+
+  private _onScroll = (e: Event): void => {
+    const el = e.currentTarget as HTMLElement;
+    if (this._scrollRaf !== undefined) return;
+    this._scrollRaf = requestAnimationFrame(() => {
+      this._scrollRaf = undefined;
+      this._viewportHeight = el.clientHeight || this._viewportHeight;
+      this._scrollTop = el.scrollTop;
+    });
+  };
 
   private _onScrollAreaClick = (): void => {
     if (this._menuForKey) this._closeEditMenu();
