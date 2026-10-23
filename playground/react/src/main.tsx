@@ -2,28 +2,8 @@ import { createRoot } from "react-dom/client";
 import {
   MstButton,
   MstFeatureTree,
-  MstTree,
   type FeatureTreeNode,
-  type MstTreeNode,
 } from "@mst-ui/react";
-
-const treeData: MstTreeNode[] = [
-  {
-    key: "root",
-    label: "Model",
-    children: [
-      { key: "head", label: "Head" },
-      {
-        key: "body",
-        label: "Body",
-        children: [
-          { key: "arm-l", label: "Left Arm" },
-          { key: "arm-r", label: "Right Arm" },
-        ],
-      },
-    ],
-  },
-];
 
 const featureData: FeatureTreeNode[] = [
   {
@@ -96,21 +76,6 @@ function App() {
           </MstButton>
           <MstButton variant="danger">Danger</MstButton>
         </div>
-      </section>
-
-      <section
-        style={{
-          background: "#fff",
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 24,
-        }}
-      >
-        <h2>Simple tree</h2>
-        <MstTree
-          data={treeData}
-          onMstSelect={(e) => console.log("select", (e as CustomEvent).detail)}
-        />
       </section>
 
       <section style={{ background: "#fff", padding: 16, borderRadius: 8 }}>

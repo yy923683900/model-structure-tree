@@ -28,4 +28,3 @@ import '@mst-ui/core/components/mst-button';
 ## Components
 
 - `<mst-button>` — primary / default / danger
-- `<mst-tree>`   — a minimal model-structure tree (set `.data` via DOM property)

@@ -1,7 +1,6 @@
 import type { DefineComponent } from 'vue';
 import type {
   MstButtonVariant,
-  MstTreeNode,
   FeatureTreeNode,
   FeatureTreeSelectDetail,
   FeatureTreeExpandDetail,
@@ -31,20 +30,6 @@ declare module 'vue' {
       object,
       {
         'mst-click': (detail: { originalEvent: MouseEvent }) => void;
-      }
-    >;
-    'mst-tree': DefineComponent<
-      {
-        data?: MstTreeNode[];
-      },
-      object,
-      object,
-      object,
-      object,
-      object,
-      object,
-      {
-        'mst-select': (detail: { node: MstTreeNode }) => void;
       }
     >;
     'mst-feature-tree': DefineComponent<

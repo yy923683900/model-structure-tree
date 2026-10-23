@@ -44,6 +44,5 @@ createApp(App).use(MstPlugin).mount('#app');
 ```vue
 <template>
   <mst-button variant="primary" @mst-click="onClick">Hello</mst-button>
-  <mst-tree :data="data" @mst-select="onSelect" />
 </template>
 ```

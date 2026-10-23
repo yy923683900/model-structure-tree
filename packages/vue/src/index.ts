@@ -2,7 +2,6 @@ import type { App, Plugin } from 'vue';
 import { defineAll } from '@mst-ui/core';
 
 export type { MstButtonVariant } from '@mst-ui/core/components/mst-button';
-export type { MstTreeNode } from '@mst-ui/core/components/mst-tree';
 export type {
   FeatureTreeNode,
   FeatureTreeSelectDetail,

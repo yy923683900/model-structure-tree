@@ -120,11 +120,13 @@ export class MstFeatureTree extends LitElement {
   private _defaultExpanded: string[] = [];
   /** 上次 `data` 的键结构签名；结构未变时（如仅显隐）保留展开与搜索展开结果 */
   private _lastDataStructureSig = '';
+  /** data 分支已重算过拍平行列表；跳过由 `_treeData` 赋值引发的下一周期重算。 */
+  private _skipFlatRecompute = false;
   private _searchTimer?: number;
   private _outsideClickBound?: (e: MouseEvent) => void;
 
   willUpdate(changed: Map<PropertyKey, unknown>): void {
-    let treeDataChanged = false;
+    let recomputed = false;
     if (changed.has('data')) {
       const raw = this.data ?? [];
       const nextSig = getTreeKeysStructureSignature(raw);
@@ -137,19 +139,26 @@ export class MstFeatureTree extends LitElement {
         this._expandedKeys = new Set(this._defaultExpanded);
       }
       this._lastDataStructureSig = nextSig;
-      treeDataChanged = true;
+      // 本周期直接算好拍平行列表；`_treeData` 的赋值会引发下一周期更新，
+      // 置跳过标记避免届时重复重算。
+      this._recomputeFlatRows();
+      this._skipFlatRecompute = true;
+      recomputed = true;
     }
     if (changed.has('selectedKey')) {
       this._selectedKey = this.selectedKey ?? null;
     }
-    // `_treeData` / `_expandedKeys` 可能在本周期内被上面分支或其他方法改写，
-    // 任一变化时重算拍平行列表（纯数据操作，万级节点也在毫秒级）。
+    // `_treeData` / `_expandedKeys` 被其他方法改写时重算拍平行列表
+    // （纯数据操作，万级节点也在毫秒级）。
     if (
-      treeDataChanged ||
-      changed.has('_treeData') ||
-      changed.has('_expandedKeys')
+      !recomputed &&
+      (changed.has('_treeData') || changed.has('_expandedKeys'))
     ) {
-      this._recomputeFlatRows();
+      if (this._skipFlatRecompute) {
+        this._skipFlatRecompute = false;
+      } else {
+        this._recomputeFlatRows();
+      }
     }
   }
 
@@ -288,7 +297,6 @@ export class MstFeatureTree extends LitElement {
             : '100%',
         })}
         @scroll=${this._onScroll}
-        @click=${this._onScrollAreaClick}
       >
         ${this._flatRows.length === 0
           ? html`<div class="empty">暂无数据</div>`
@@ -358,7 +366,6 @@ export class MstFeatureTree extends LitElement {
     return html`
       <div
         class="row"
-        data-row-key=${node.key}
         aria-selected=${selected}
         @click=${(e: MouseEvent) => this._onRowClick(e, node)}
       >
@@ -444,10 +451,6 @@ export class MstFeatureTree extends LitElement {
       this._viewportHeight = el.clientHeight || this._viewportHeight;
       this._scrollTop = el.scrollTop;
     });
-  };
-
-  private _onScrollAreaClick = (): void => {
-    if (this._menuForKey) this._closeEditMenu();
   };
 
   private _onSearchInput = (e: Event): void => {

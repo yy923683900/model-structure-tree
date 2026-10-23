@@ -1,24 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { FeatureTreeNode, MstTreeNode } from '@mst-ui/vue';
-
-const data = ref<MstTreeNode[]>([
-  {
-    key: 'root',
-    label: 'Model',
-    children: [
-      { key: 'head', label: 'Head' },
-      {
-        key: 'body',
-        label: 'Body',
-        children: [
-          { key: 'arm-l', label: 'Left Arm' },
-          { key: 'arm-r', label: 'Right Arm' },
-        ],
-      },
-    ],
-  },
-]);
+import type { FeatureTreeNode } from '@mst-ui/vue';
 
 const featureData = ref<FeatureTreeNode[]>([
   {
@@ -61,9 +43,6 @@ const featureData = ref<FeatureTreeNode[]>([
 function onClick(tag: string) {
   console.log('clicked', tag);
 }
-function onSelect(e: Event) {
-  console.log('select', (e as CustomEvent).detail);
-}
 function onFeatureEvent(name: string, e: Event) {
   console.log(name, (e as CustomEvent).detail);
 }
@@ -82,11 +61,6 @@ function onFeatureEvent(name: string, e: Event) {
         </mst-button>
         <mst-button variant="danger">Danger</mst-button>
       </div>
-    </section>
-
-    <section style="background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 24px">
-      <h2>Simple tree</h2>
-      <mst-tree :data="data" @mst-select="onSelect" />
     </section>
 
     <section style="background: #fff; padding: 16px; border-radius: 8px">

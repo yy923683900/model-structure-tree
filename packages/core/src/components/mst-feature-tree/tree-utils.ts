@@ -28,10 +28,7 @@ export function findKeyByOid(
   nodes: FeatureTreeNode[],
 ): string | undefined {
   for (const node of nodes) {
-    if (
-      node.id !== undefined &&
-      (node.id === oid || String(node.id) === String(oid))
-    ) {
+    if (node.id !== undefined && String(node.id) === String(oid)) {
       return node.key;
     }
     if (node.children?.length) {
@@ -122,14 +119,6 @@ export function toggleNodeVisibility(
   });
 }
 
-function showAllUnder(nodes: FeatureTreeNode[]): FeatureTreeNode[] {
-  return nodes.map((n) => ({
-    ...n,
-    isVisible: true,
-    children: n.children ? showAllUnder(n.children) : undefined,
-  }));
-}
-
 /**
  * Only the target node and its descendants are visible; every other node is
  * hidden (including ancestors and siblings).
@@ -143,7 +132,7 @@ export function isolateSubtree(
       return {
         ...node,
         isVisible: true,
-        children: node.children ? showAllUnder(node.children) : undefined,
+        children: node.children ? setAllVisible(node.children) : undefined,
       };
     }
     if (node.children?.length) {
@@ -158,11 +147,7 @@ export function isolateSubtree(
 }
 
 export function setAllVisible(data: FeatureTreeNode[]): FeatureTreeNode[] {
-  return data.map((n) => ({
-    ...n,
-    isVisible: true,
-    children: n.children ? setAllVisible(n.children) : undefined,
-  }));
+  return cascadeVisibility(data, true);
 }
 
 /** 仅当「键结构」与父子关系变化时与另一棵树不同，用于区分配列更新 / 显隐等叶子属性更新 */

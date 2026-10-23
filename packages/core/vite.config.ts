@@ -12,10 +12,6 @@ export default defineConfig({
           dirname,
           'src/components/mst-button/index.ts',
         ),
-        'components/mst-tree/index': resolve(
-          dirname,
-          'src/components/mst-tree/index.ts',
-        ),
         'components/mst-feature-tree/index': resolve(
           dirname,
           'src/components/mst-feature-tree/index.ts',

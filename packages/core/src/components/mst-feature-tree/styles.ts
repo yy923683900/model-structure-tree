@@ -11,7 +11,6 @@ export const featureTreeStyles = css`
     --mst-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, sans-serif;
     --mst-bg: rgba(255, 255, 255, 0.8);
-    --mst-border: #e8e8e8;
     --mst-text: rgba(0, 0, 0, 0.85);
     --mst-text-muted: #bfbfbf;
     --mst-text-secondary: #666;
@@ -68,9 +67,8 @@ export const featureTreeStyles = css`
     min-width: 0;
   }
 
+  /* 高度由 render() 的内联样式按 height / searchable 属性动态控制。 */
   .tree-scroll {
-    height: calc(100% - 56px);
-    max-height: 750px;
     overflow: auto;
     padding: 0 10px 8px;
   }
