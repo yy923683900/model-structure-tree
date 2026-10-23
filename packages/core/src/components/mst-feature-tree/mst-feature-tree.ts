@@ -120,13 +120,11 @@ export class MstFeatureTree extends LitElement {
   private _defaultExpanded: string[] = [];
   /** 上次 `data` 的键结构签名；结构未变时（如仅显隐）保留展开与搜索展开结果 */
   private _lastDataStructureSig = '';
-  /** data 分支已重算过拍平行列表；跳过由 `_treeData` 赋值引发的下一周期重算。 */
-  private _skipFlatRecompute = false;
   private _searchTimer?: number;
   private _outsideClickBound?: (e: MouseEvent) => void;
 
   willUpdate(changed: Map<PropertyKey, unknown>): void {
-    let recomputed = false;
+    let treeDataChanged = false;
     if (changed.has('data')) {
       const raw = this.data ?? [];
       const nextSig = getTreeKeysStructureSignature(raw);
@@ -139,26 +137,21 @@ export class MstFeatureTree extends LitElement {
         this._expandedKeys = new Set(this._defaultExpanded);
       }
       this._lastDataStructureSig = nextSig;
-      // 本周期直接算好拍平行列表；`_treeData` 的赋值会引发下一周期更新，
-      // 置跳过标记避免届时重复重算。
-      this._recomputeFlatRows();
-      this._skipFlatRecompute = true;
-      recomputed = true;
+      treeDataChanged = true;
     }
     if (changed.has('selectedKey')) {
       this._selectedKey = this.selectedKey ?? null;
     }
-    // `_treeData` / `_expandedKeys` 被其他方法改写时重算拍平行列表
-    // （纯数据操作，万级节点也在毫秒级）。
+    // willUpdate 内的赋值不会引发新的更新周期（Lit 在 update() 末尾才把
+    // isUpdatePending 置回 false 并清空 changed 表），因此 data 分支必须
+    // 靠 treeDataChanged 在本周期重算；`changed.has(...)` 捕捉的则是事件
+    // 处理器 / 公开方法在周期外对 `_treeData`、`_expandedKeys` 的改写。
     if (
-      !recomputed &&
-      (changed.has('_treeData') || changed.has('_expandedKeys'))
+      treeDataChanged ||
+      changed.has('_treeData') ||
+      changed.has('_expandedKeys')
     ) {
-      if (this._skipFlatRecompute) {
-        this._skipFlatRecompute = false;
-      } else {
-        this._recomputeFlatRows();
-      }
+      this._recomputeFlatRows();
     }
   }
 
