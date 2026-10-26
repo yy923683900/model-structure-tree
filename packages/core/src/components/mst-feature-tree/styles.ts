@@ -154,6 +154,10 @@ export const featureTreeStyles = css`
   .title.hidden {
     color: var(--mst-text-muted);
   }
+  /* 高亮（highlightKey）：与选中态互不影响，仅文字变蓝。 */
+  .title.highlighted {
+    color: var(--mst-primary);
+  }
   .title .match {
     color: var(--mst-match);
   }

@@ -49,6 +49,8 @@ const SEARCH_DEBOUNCE_MS = 300;
  * - `allowDeselect`  – `boolean` attribute, click same row to clear selection (default: false)
  * - `showEdit`        – `boolean` attribute, show per-row edit button + dropdown
  *                       (编辑模型 / 编辑属性) (default: false)
+ * - `highlightKey`    – `string | null` attribute `highlight-key`; 蓝色高亮唯一节点，
+ *                       可与选中态叠加；key 变化时自动展开父级并滚动定位 (default: null)
  *
  * Events (CustomEvent):
  * - `mst-select`             – `{ key, node }`
@@ -100,9 +102,13 @@ export class MstFeatureTree extends LitElement {
   @property({ type: Boolean, attribute: 'show-edit' })
   showEdit = false;
 
+  @property({ type: String, attribute: 'highlight-key' })
+  highlightKey: string | null = null;
+
   @state() private _treeData: FeatureTreeNode[] = [];
   @state() private _expandedKeys = new Set<string>();
   @state() private _selectedKey: string | null = null;
+  @state() private _highlightKey: string | null = null;
   @state() private _searchValue = '';
   @state() private _debouncedSearch = '';
   @state() private _menuForKey: string | null = null;
@@ -130,6 +136,7 @@ export class MstFeatureTree extends LitElement {
 
   willUpdate(changed: Map<PropertyKey, unknown>): void {
     let treeDataChanged = false;
+    let expandedKeysChanged = false;
     if (changed.has('data')) {
       const raw = this.data ?? [];
       const nextSig = getTreeKeysStructureSignature(raw);
@@ -147,12 +154,27 @@ export class MstFeatureTree extends LitElement {
     if (changed.has('selectedKey')) {
       this._selectedKey = this.selectedKey ?? null;
     }
+    // 高亮由 `highlightKey` 完全受控，与选中态互不影响；key 变化时自动
+    // 展开父级并滚动定位。需在 data 分支之后执行，父级查找基于新树。
+    if (changed.has('highlightKey')) {
+      const next = this.highlightKey ?? null;
+      this._highlightKey = next;
+      if (next) {
+        const parents = getParentKeysForNode(next, this._treeData) ?? [];
+        if (parents.length) {
+          this._expandedKeys = new Set([...this._expandedKeys, ...parents]);
+          expandedKeysChanged = true;
+        }
+        queueMicrotask(() => this.scrollToNode(next));
+      }
+    }
     // willUpdate 内的赋值不会引发新的更新周期（Lit 在 update() 末尾才把
     // isUpdatePending 置回 false 并清空 changed 表），因此 data 分支必须
     // 靠 treeDataChanged 在本周期重算；`changed.has(...)` 捕捉的则是事件
     // 处理器 / 公开方法在周期外对 `_treeData`、`_expandedKeys` 的改写。
     if (
       treeDataChanged ||
+      expandedKeysChanged ||
       changed.has('_treeData') ||
       changed.has('_expandedKeys')
     ) {
@@ -354,6 +376,7 @@ export class MstFeatureTree extends LitElement {
     const hasChildren = !!node.children?.length;
     const expanded = this._expandedKeys.has(node.key);
     const selected = this._selectedKey === node.key;
+    const highlighted = node.key === this._highlightKey;
     const hidden = node.isVisible === false;
 
     const indentCells: TemplateResult[] = [];
@@ -382,7 +405,13 @@ export class MstFeatureTree extends LitElement {
           ${hasChildren ? chevronRightIcon : ''}
         </span>
         <div class="row-body">
-          <div class=${classMap({ title: true, hidden })}>
+          <div
+            class=${classMap({
+              title: true,
+              hidden,
+              highlighted,
+            })}
+          >
             ${this._renderTitle(node.title)}
           </div>
           <div class="actions" @click=${(e: MouseEvent) => e.stopPropagation()}>
