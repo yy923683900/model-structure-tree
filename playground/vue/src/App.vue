@@ -68,6 +68,7 @@ function onFeatureEvent(name: string, e: Event) {
       <mst-feature-tree
         :data="featureData"
         :height="500"
+        show-edit
         @mst-select="(e: Event) => onFeatureEvent('select', e)"
         @mst-visibility-change="(e: Event) => onFeatureEvent('visibility', e)"
         @mst-edit-model="(e: Event) => onFeatureEvent('edit-model', e)"

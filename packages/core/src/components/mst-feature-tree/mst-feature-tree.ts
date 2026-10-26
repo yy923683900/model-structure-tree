@@ -47,6 +47,8 @@ const SEARCH_DEBOUNCE_MS = 300;
  * - `width`           – `number` attribute, host width in px when not `fullWidth` (default: 500)
  * - `fullWidth`       – `boolean` attribute, host width 100% (default: false)
  * - `allowDeselect`  – `boolean` attribute, click same row to clear selection (default: false)
+ * - `showEdit`        – `boolean` attribute, show per-row edit button + dropdown
+ *                       (编辑模型 / 编辑属性) (default: false)
  *
  * Events (CustomEvent):
  * - `mst-select`             – `{ key, node }`
@@ -94,6 +96,9 @@ export class MstFeatureTree extends LitElement {
 
   @property({ type: Boolean, attribute: 'allow-deselect' })
   allowDeselect = false;
+
+  @property({ type: Boolean, attribute: 'show-edit' })
+  showEdit = false;
 
   @state() private _treeData: FeatureTreeNode[] = [];
   @state() private _expandedKeys = new Set<string>();
@@ -381,14 +386,18 @@ export class MstFeatureTree extends LitElement {
             ${this._renderTitle(node.title)}
           </div>
           <div class="actions" @click=${(e: MouseEvent) => e.stopPropagation()}>
-            <button
-              type="button"
-              class=${classMap({ 'action-btn': true, muted: hidden })}
-              title="编辑"
-              @click=${(e: MouseEvent) => this._openEditMenu(e, node.key)}
-            >
-              ${editIcon}
-            </button>
+            ${this.showEdit
+              ? html`
+                  <button
+                    type="button"
+                    class=${classMap({ 'action-btn': true, muted: hidden })}
+                    title="编辑"
+                    @click=${(e: MouseEvent) => this._openEditMenu(e, node.key)}
+                  >
+                    ${editIcon}
+                  </button>
+                `
+              : nothing}
             <button
               type="button"
               class=${classMap({ 'action-btn': true, muted: hidden })}
