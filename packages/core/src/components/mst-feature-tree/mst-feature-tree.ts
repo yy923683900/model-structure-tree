@@ -122,6 +122,8 @@ export class MstFeatureTree extends LitElement {
 
   /** key → 行号，用于 `scrollToNode` 定位。 */
   private _rowIndexByKey = new Map<string, number>();
+  /** 容器不可见（如 display:none）时 scrollTo 是 no-op，先记下目标，恢复可见后补滚。 */
+  private _pendingScrollKey: string | null = null;
   /** 行高（px），取自 `--mst-row-height`；虚拟滚动的行高基准。 */
   private _rowHeight = 40;
   /** 虚拟滚动窗口上下各多渲染的行数，滚动更平滑。 */
@@ -208,6 +210,8 @@ export class MstFeatureTree extends LitElement {
       if (typeof ResizeObserver !== 'undefined') {
         this._resizeObserver = new ResizeObserver(() => {
           this._viewportHeight = sc.clientHeight;
+          // 容器从不可见恢复后（尺寸 0 → 实际值），补滚之前未完成的定位。
+          if (this._pendingScrollKey) this.scrollToNode(this._pendingScrollKey);
         });
         this._resizeObserver.observe(sc);
       }
@@ -287,10 +291,20 @@ export class MstFeatureTree extends LitElement {
 
   scrollToNode(key: string): void {
     const index = this._rowIndexByKey.get(key);
-    if (index === undefined) return;
+    if (index === undefined) {
+      this._pendingScrollKey = null;
+      return;
+    }
     const sc = this.renderRoot.querySelector<HTMLElement>('.tree-scroll');
     if (!sc) return;
+    // display:none 等不可见状态下没有布局盒，scrollTo 是 no-op；
+    // 先记下目标，等容器恢复尺寸（ResizeObserver 触发）时再补滚。
+    if (sc.clientWidth === 0 && sc.clientHeight === 0) {
+      this._pendingScrollKey = key;
+      return;
+    }
     const top = Math.max(0, index * this._rowHeight);
+    this._pendingScrollKey = null;
     if (Math.abs(sc.scrollTop - top) < 0.5) return;
     sc.scrollTo({ top, behavior: 'smooth' });
   }
